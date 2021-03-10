@@ -16,6 +16,7 @@ contract CompoundReserveSafeSaviour is SafeSaviourLike {
         address collateralJoin_,
         address liquidationEngine_,
         address oracleRelayer_,
+        address safeEngine_,
         address safeManager_,
         address saviourRegistry_,
         uint256 keeperPayout_,
@@ -25,39 +26,43 @@ contract CompoundReserveSafeSaviour is SafeSaviourLike {
     ) public {
         require(
             collateralJoin_ != address(0),
-            "CompoundReserveSafeSaviour/null-collateral-join"
+            "GeneralTokenReserveSafeSaviour/null-collateral-join"
         );
         require(
             liquidationEngine_ != address(0),
-            "CompoundReserveSafeSaviour/null-liquidation-engine"
+            "GeneralTokenReserveSafeSaviour/null-liquidation-engine"
         );
         require(
             oracleRelayer_ != address(0),
-            "CompoundReserveSafeSaviour/null-oracle-relayer"
+            "GeneralTokenReserveSafeSaviour/null-oracle-relayer"
+        );
+        require(
+            safeEngine_ != address(0),
+            "GeneralTokenReserveSafeSaviour/null-safe-engine"
         );
         require(
             safeManager_ != address(0),
-            "CompoundReserveSafeSaviour/null-safe-manager"
+            "GeneralTokenReserveSafeSaviour/null-safe-manager"
         );
         require(
             saviourRegistry_ != address(0),
-            "CompoundReserveSafeSaviour/null-saviour-registry"
+            "GeneralTokenReserveSafeSaviour/null-saviour-registry"
         );
         require(
             keeperPayout_ > 0,
-            "CompoundReserveSafeSaviour/invalid-keeper-payout"
+            "GeneralTokenReserveSafeSaviour/invalid-keeper-payout"
         );
         require(
             defaultDesiredCollateralizationRatio_ > 0,
-            "CompoundReserveSafeSaviour/null-default-cratio"
+            "GeneralTokenReserveSafeSaviour/invalid-default-cratio"
         );
         require(
             payoutToSAFESize_ > 1,
-            "CompoundReserveSafeSaviour/invalid-payout-to-safe-size"
+            "GeneralTokenReserveSafeSaviour/invalid-payout-to-safe-size"
         );
         require(
             minKeeperPayoutValue_ > 0,
-            "CompoundReserveSafeSaviour/invalid-min-payout-value"
+            "GeneralTokenReserveSafeSaviour/invalid-min-payout-value"
         );
 
         keeperPayout = keeperPayout_;
@@ -67,38 +72,36 @@ contract CompoundReserveSafeSaviour is SafeSaviourLike {
         liquidationEngine = LiquidationEngineLike(liquidationEngine_);
         collateralJoin = CollateralJoinLike(collateralJoin_);
         oracleRelayer = OracleRelayerLike(oracleRelayer_);
-        safeEngine = SAFEEngineLike(collateralJoin.safeEngine());
+        safeEngine = SAFEEngineLike(safeEngine_);
         safeManager = GebSafeManagerLike(safeManager_);
         saviourRegistry = SAFESaviourRegistryLike(saviourRegistry_);
         collateralToken = ERC20Like(collateralJoin.collateral());
 
-        require(
-            address(safeEngine) != address(0),
-            "CompoundReserveSafeSaviour/null-safe-engine"
-        );
         uint256 scaledLiquidationRatio =
             oracleRelayer.liquidationCRatio(collateralJoin.collateralType()) /
                 CRATIO_SCALE_DOWN;
 
         require(
             scaledLiquidationRatio > 0,
-            "CompoundReserveSafeSaviour/invalid-scaled-liq-ratio"
+            "GeneralTokenReserveSafeSaviour/invalid-scaled-liq-ratio"
         );
         require(
             both(
                 defaultDesiredCollateralizationRatio_ > scaledLiquidationRatio,
                 defaultDesiredCollateralizationRatio_ <= MAX_CRATIO
             ),
-            "CompoundReserveSafeSaviour/invalid-default-desired-cratio"
+            "GeneralTokenReserveSafeSaviour/invalid-default-desired-cratio"
         );
         require(
             collateralJoin.decimals() == 18,
-            "CompoundReserveSafeSaviour/invalid-join-decimals"
+            "GeneralTokenReserveSafeSaviour/invalid-join-decimals"
         );
         require(
             collateralJoin.contractEnabled() == 1,
-            "CompoundReserveSafeSaviour/join-disabled"
+            "GeneralTokenReserveSafeSaviour/join-disabled"
         );
+
+        defaultDesiredCollateralizationRatio = defaultDesiredCollateralizationRatio_;
     }
 
     function saveSAFE(
